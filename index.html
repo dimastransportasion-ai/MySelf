@@ -2,101 +2,97 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRL Indonesia - White Smoke Particle Morphing</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KRL Indonesia - Mobile Friendly Smoke Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght=500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --bg-dark: #020406;
             --panel-bg: rgba(5, 7, 12, 0.9);
             --accent-smoke: #ffffff;
-            --accent-cyan: #00f0ff;
             --accent-red: #ff3344;
             --text-main: #f8fafc;
-            --text-muted: #475569;
-            --glow-smoke: 0 0 25px rgba(255, 255, 255, 0.2);
+            --text-muted: #64748b;
+            --glow-smoke: 0 0 25px rgba(255, 255, 255, 0.15);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
         }
 
         body {
             background-color: var(--bg-dark);
             color: var(--text-main);
             font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow: hidden;
-            height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto; /* Mengaktifkan scroll alami bodi */
+            min-height: 100vh;
         }
 
-        #canvas-viewport {
-            position: absolute;
+        /* VIEWPORT CANVAS (PC & HP Hybrid) */
+        #canvas-container {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 1;
+            pointer-events: none; /* Mencegah canvas nge-block scroll jempol di HP */
         }
 
-        /* Watermark Request Dimas */
+        #error-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: var(--accent-red);
+            display: none; justify-content: center; align-items: center;
+            font-family: 'Space Grotesk', sans-serif; z-index: 9999; text-align: center;
+        }
+
         .dimas-watermark {
             position: fixed;
             top: 24px;
             left: 24px;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 12px 28px;
-            border-radius: 16px;
+            background: rgba(5, 7, 12, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 12px;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 14px;
-            letter-spacing: 3px;
+            font-size: 12px;
+            letter-spacing: 2px;
             z-index: 100;
-            backdrop-filter: blur(20px);
-            box-shadow: var(--glow-smoke);
+            backdrop-filter: blur(10px);
             font-weight: 700;
             color: #fff;
         }
-        .dimas-watermark span {
-            color: var(--accent-smoke);
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
 
-        /* HUD Overlays */
+        /* LAYOUT UTAMA HUD (Responsif) */
         .hud-grid-system {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: relative;
             z-index: 10;
-            pointer-events: none;
             display: grid;
             grid-template-columns: 390px 1fr 390px;
             padding: 35px;
             gap: 30px;
+            min-height: 100vh;
+            pointer-events: none;
         }
 
         .hud-panel-card {
             pointer-events: auto;
             background: var(--panel-bg);
-            backdrop-filter: blur(35px);
+            backdrop-filter: blur(30px);
             border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 32px;
+            border-radius: 28px;
             padding: 32px;
             display: flex;
             flex-direction: column;
-            gap: 28px;
-            box-shadow: 0 35px 70px rgba(0,0,0,0.95);
-            max-height: calc(100vh - 70px);
-            overflow-y: auto;
+            gap: 24px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            height: fit-content;
         }
-
-        .hud-panel-card::-webkit-scrollbar { width: 3px; }
-        .hud-panel-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); }
 
         .header-meta p {
             font-size: 10px;
@@ -107,160 +103,176 @@
         }
         .header-meta h1 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
-            background: linear-gradient(45deg, #fff, #334155);
+            background: linear-gradient(45deg, #fff, #475569);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-top: 2px;
         }
 
-        /* Timeline Axis */
         .history-pipeline {
             display: flex;
             flex-direction: column;
-            gap: 26px;
+            gap: 20px;
             border-left: 1px dashed rgba(255, 255, 255, 0.1);
-            padding-left: 22px;
-            margin-top: 12px;
+            padding-left: 20px;
+            margin-top: 10px;
         }
-        .pipeline-node { position: relative; }
-        .pipeline-node::before {
-            content: '';
-            position: absolute;
-            left: -27px;
-            top: 6px;
-            width: 9px;
-            height: 9px;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: var(--glow-smoke);
-        }
-        .pipeline-node h3 { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .pipeline-node p { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+        .pipeline-node h3 { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+        .pipeline-node p { font-size: 12px; color: #94a3b8; line-height: 1.5; }
 
-        /* Tech Specification Matrix */
         .tech-spec-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 12px;
         }
         .spec-container-box {
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid rgba(255, 255, 255, 0.02);
-            padding: 18px;
-            border-radius: 18px;
-            transition: all 0.4s ease;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px;
+            border-radius: 14px;
         }
-        .spec-container-box:hover { border-color: rgba(255, 255, 255, 0.15); }
-        .spec-container-box span { font-size: 10px; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px; letter-spacing: 0.5px; }
-        .spec-container-box p { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #f1f5f9; }
+        .spec-container-box span { font-size: 9px; color: var(--text-muted); text-transform: uppercase; display: block; }
+        .spec-container-box p { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: #f1f5f9; }
 
         .center-hud-telemetry {
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
-            padding-bottom: 50px;
+            padding-bottom: 120px;
             text-align: center;
         }
         .center-hud-telemetry h2 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 46px;
+            font-size: 42px;
             font-weight: 700;
-            letter-spacing: -1.5px;
-            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
         }
-        .center-hud-telemetry p {
-            font-size: 11px;
-            color: #94a3b8;
-            letter-spacing: 6px;
-            text-transform: uppercase;
-        }
+        .center-hud-telemetry p { font-size: 10px; color: #94a3b8; letter-spacing: 4px; text-transform: uppercase; }
 
-        /* Bottom Controls Menu */
+        /* MENU DOCK FIX DI BAWAH (Sangat Ramah Jempol) */
         .bottom-dock-menu {
             position: fixed;
-            bottom: 40px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
             display: flex;
-            gap: 16px;
-            background: rgba(2, 4, 6, 0.8);
-            padding: 12px 24px;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(25px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            gap: 8px;
+            background: rgba(5, 7, 12, 0.85);
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            width: max-content;
+            max-width: 90%;
         }
         .dock-trigger-btn {
             background: transparent;
             border: none;
             color: #475569;
-            padding: 14px 28px;
-            border-radius: 35px;
-            font-size: 13px;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             font-family: 'Space Grotesk';
-            letter-spacing: 1px;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.3s ease;
+            white-space: nowrap;
         }
         .dock-trigger-btn.active, .dock-trigger-btn:hover {
             color: #fff;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: var(--glow-smoke);
         }
 
-        @media (max-width: 1024px) {
-            .hud-grid-system { grid-template-columns: 1fr; height: 100vh; overflow-y: auto; pointer-events: auto; padding: 15px; }
-            .hud-panel-card { max-height: none; }
-            .bottom-dock-menu { position: relative; bottom: 0; left: 0; transform: none; margin: 30px auto; width: fit-content; }
+        /* 📱 BREAKPOINT KHUSUS SMARTPHONE (ANTI BINGUNG / ANTI KEKUNCI) */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: scroll; /* Paksa halaman bisa discroll bebas */
+            }
+            #canvas-container {
+                position: absolute; /* Ikut gerak saat di-scroll, gak maten di layar */
+                height: 40vh; /* Model 3D cuma dapet jatah area atas */
+                background: linear-gradient(to bottom, #020406 80%, transparent);
+            }
+            .dimas-watermark {
+                top: 12px; left: 12px; padding: 6px 12px; font-size: 10px;
+            }
+            .hud-grid-system {
+                grid-template-columns: 1fr;
+                padding: 16px;
+                padding-top: 42vh; /* Dorong seluruh teks ke bawah area 3D */
+                gap: 20px;
+                min-height: auto;
+                padding-bottom: 100px; /* Ruang aman biar teks gak ketutup tombol bawah */
+            }
+            .hud-panel-card {
+                backdrop-filter: none; /* Hemat performa GPU HP */
+                background: rgba(5, 7, 12, 0.95);
+                padding: 22px;
+                border-radius: 20px;
+            }
+            .center-hud-telemetry {
+                grid-row: 1; /* Pindain status judul ke paling atas teks info */
+                padding-bottom: 0;
+                margin-bottom: -10px;
+            }
+            .center-hud-telemetry h2 { font-size: 32px; }
+            .bottom-dock-menu {
+                bottom: 12px;
+                padding: 6px 10px;
+            }
+            .dock-trigger-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
 <body>
 
+    <div id="error-overlay"><h1>Gagal memuat sistem 3D.</h1></div>
     <div class="dimas-watermark"><span>By Dimas</span></div>
-
-    <div id="canvas-viewport"></div>
+    
+    <div id="canvas-container"></div>
 
     <div class="hud-grid-system">
+        
         <div class="hud-panel-card">
             <div class="header-meta">
-                <p>ATMOSPHERIC VAPOR ENGINE v6.0</p>
-                <h1>SMOKE SHADER CORE</h1>
+                <p>ATMOSPHERIC ENGINE v6.3</p>
+                <h1>SMOKE CORE</h1>
             </div>
             <div>
-                <h2 style="font-size: 14px; color: #94a3b8; margin-bottom: 16px; font-family: 'Space Grotesk'; letter-spacing: 1.5px;">DATA ARCHIVE CENTER</h2>
                 <div class="history-pipeline">
                     <div class="pipeline-node">
-                        <h3>1925 — Fondasi LAA Pertama</h3>
-                        <p>Jalur Tanjung Priok ke Meester Cornelis resmi dialiri arus 1500 V DC, menempatkan Jakarta sebagai pionir komuter listrik Asia Tenggara.</p>
+                        <h3>1925 — Listrik Pertama</h3>
+                        <p>Jalur Tanjung Priok resmi dialiri arus 1500 V DC, menempatkan Jakarta sebagai pionir komuter listrik Asia Tenggara.</p>
                     </div>
                     <div class="pipeline-node">
-                        <h3>Juni 2025 — Integrasi Seri CLI-125</h3>
-                        <p>KRL impor modern dari manufaktur CRRC Sifang resmi berdinas di rute utama guna memajukan efisiensi perjalanan komuter urban.</p>
+                        <h3>Juni 2025 — Seri CLI-125</h3>
+                        <p>KRL impor modern dari manufaktur CRRC Sifang resmi berdinas di rute utama guna memajukan efisiensi urban.</p>
                     </div>
                     <div class="pipeline-node">
-                        <h3>Desember 2025 — Era Baru CLI-225</h3>
-                        <p>Armada karya anak bangsa garapan PT INKA Madiun resmi diluncurkan demi menyokong kemandirian teknologi perkeretaapian nasional.</p>
+                        <h3>Desember 2025 — Seri CLI-225</h3>
+                        <p>Armada karya anak bangsa garapan PT INKA Madiun resmi diluncurkan demi menyokong kemandirian teknologi nasional.</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="center-hud-telemetry">
-            <p id="status-vector">WHITE SMOKE MORPHING DISPERSAL ACTIVE</p>
+            <p id="status-vector">WHITE SMOKE SILHOUETTE ACTIVE</p>
             <h2 id="active-model">SERI CLI-125</h2>
         </div>
 
         <div class="hud-panel-card">
             <div>
-                <h2 style="font-size: 14px; margin-bottom: 6px; font-family: 'Space Grotesk'; letter-spacing: 1.5px;">SYSTEM ARCHITECTURE</h2>
-                <p style="font-size: 12px; color: #64748b;" id="desc-text">Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025). Menggunakan kesatuan sistem manajemen data TCMS terpadu.</p>
+                <h2 style="font-size: 13px; margin-bottom: 4px; font-family: 'Space Grotesk'; letter-spacing: 1px;">SYSTEM ARCHITECTURE</h2>
+                <p style="font-size: 12px; color: #94a3b8;" id="desc-text">Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025). Menggunakan kesatuan sistem manajemen data TCMS terpadu.</p>
             </div>
             <div class="tech-spec-layout">
                 <div class="spec-container-box"><span>Tegangan Input</span><p id="spec-volt">1500 V DC</p></div>
@@ -268,199 +280,207 @@
                 <div class="spec-container-box"><span>Kecepatan Maks</span><p id="spec-speed">120 KM/H</p></div>
                 <div class="spec-container-box"><span>Manufaktur</span><p id="spec-maker">CRRC Sifang</p></div>
             </div>
-            <div style="background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 20px;">
-                <h3 style="font-size: 12px; color: #fff; margin-bottom: 6px; font-family: 'Space Grotesk';" id="note-title">INTEGRASI TELEMETRI</h3>
-                <p style="font-size: 11px; color: #64748b; line-height: 1.6;" id="note-text">Menyediakan pemantauan real-time via satelit operasional, pintu geser elektrik otomatis, serta interior modular hemat daya.</p>
+            <div style="background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.1); padding: 16px; border-radius: 14px;">
+                <h3 style="font-size: 12px; color: #fff; margin-bottom: 4px; font-family: 'Space Grotesk';" id="note-title">INTEGRASI TELEMETRI</h3>
+                <p style="font-size: 11px; color: #64748b; line-height: 1.5;" id="note-text">Menyediakan pemantauan real-time via satelit operasional, pintu geser elektrik otomatis, serta interior modular hemat daya.</p>
             </div>
         </div>
     </div>
 
     <div class="bottom-dock-menu">
-        <button class="bottom-dock-menu dock-trigger-btn active" style="position:static; transform:none; padding:14px 28px; background:transparent; border:none;" onclick="triggerSmokeMorph(0, 'SERI CLI-125', '1500 V DC', 'IGBT-VVVF CRRC', '120 KM/H', 'CRRC Sifang', 'INTEGRASI TELEMETRI', 'Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025). Menggunakan kesatuan sistem manajemen data TCMS terpadu.', this)">CLI-125</button>
-        <button class="bottom-dock-menu dock-trigger-btn" style="position:static; transform:none; padding:14px 28px; background:transparent; border:none;" onclick="triggerSmokeMorph(1, 'SERI CLI-225', '1500 V DC', 'VVVF-IGBT Toyo', '120 KM/H', 'PT INKA', 'MANUFAKTUR LOKAL', 'KRL kebanggaan produksi PT INKA dengan struktur eksterior stainless steel kokoh anti korosi lintas waktu.', this)">CLI-225</button>
-        <button class="bottom-dock-menu dock-trigger-btn" style="position:static; transform:none; padding:14px 28px; background:transparent; border:none;" onclick="triggerSmokeMorph(2, 'SERI JR-205', '1500 V DC', 'Rheostatic / VVVF', '100 KM/H', 'Japan Rail', 'LEGENDARY CORE', 'Armada legendaris andalan lintas komuter yang mendominasi sejarah modifikasi teknologi LAA lintas Jabodetabek.', this)">SERI JR-205</button>
+        <button class="dock-trigger-btn active" onclick="triggerSmokeMorph(0, 'SERI CLI-125', '1500 V DC', 'IGBT-VVVF CRRC', '120 KM/H', 'CRRC Sifang', 'INTEGRASI TELEMETRI', 'Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025). Menggunakan kesatuan sistem manajemen data TCMS terpadu.', this)">CLI-125</button>
+        <button class="dock-trigger-btn" onclick="triggerSmokeMorph(1, 'SERI CLI-225', '1500 V DC', 'VVVF-IGBT Toyo', '120 KM/H', 'PT INKA', 'MANUFAKTUR LOKAL', 'KRL kebanggaan produksi PT INKA dengan struktur eksterior stainless steel kokoh anti korosi lintas waktu.', this)">CLI-225</button>
+        <button class="dock-trigger-btn" onclick="triggerSmokeMorph(2, 'SERI JR-205', '1500 V DC', 'Rheostatic / VVVF', '100 KM/H', 'Japan Rail', 'LEGENDARY CORE', 'Armada legendaris andalan lintas komuter yang mendominasi sejarah modifikasi teknologi LAA lintas Jabodetabek.', this)">SERI JR-205</button>
     </div>
 
     <script>
-        const viewport = document.getElementById('canvas-viewport');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020406, 0.015);
+        "use strict";
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 4.5, 11);
-        camera.lookAt(0, 0, 0);
+        try {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020406, 0.02);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        viewport.appendChild(renderer.domElement);
-
-        // Fungsi Cerdas Membuat Tekstur Bulat Halus Asap secara runtime (Tanpa perlu file gambar luar)
-        function createSmokeTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // Membuat efek radial gradient pudar (tengah putih pekat, pinggiran transparan)
-            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
-            gradient.addColorStop(0.2, 'rgba(240, 240, 240, 0.18)');
-            gradient.addColorStop(0.6, 'rgba(220, 220, 220, 0.03)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 64, 64);
-            
-            const texture = new THREE.CanvasTexture(canvas);
-            return texture;
-        }
+            // Penyesuaian kamera awal (Lebih mundur dikit di HP biar pas ukuran layarnya)
+            const isMobile = window.innerWidth <= 768;
+            camera.position.set(0, isMobile ? 3.2 : 4.0, isMobile ? 13 : 12);
+            camera.lookAt(0, 0, 0);
 
-        const particlePoolSize = 5000;
-        const coreGeometry = new THREE.BufferGeometry();
-        
-        const currentCoordinates = new Float32Array(particlePoolSize * 3);
-        const targetCoordinates = new Float32Array(particlePoolSize * 3);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, isMobile ? window.innerHeight * 0.45 : window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
 
-        // Algoritma Pemetaan Bentuk Kereta Komuter KRL
-        function computeTrainMatrix(modelType, destinationArray) {
-            let pointer = 0;
-            for(let i=0; i < particlePoolSize; i++) {
-                if(modelType === 0) { 
-                    let rx = (Math.random() - 0.5) * 7.0;
-                    let ry = (Math.random() - 0.5) * 1.8;
-                    let rz = (Math.random() - 0.5) * 1.8;
-                    if(rx > 2.5) {
-                        ry *= (1.0 - (rx - 2.5) * 0.4);
-                        rz *= (1.0 - (rx - 2.5) * 0.2);
-                    }
-                    destinationArray[pointer] = rx;
-                    destinationArray[pointer+1] = ry + 0.4;
-                    destinationArray[pointer+2] = rz;
-                } 
-                else if(modelType === 1) { 
-                    if (i < particlePoolSize * 0.75) {
-                        let segmentLength = (Math.random() - 0.5) * 7.2;
-                        let radialAngle = Math.random() * 2.0 * Math.PI;
-                        let tubeRadius = 1.1;
-                        destinationArray[pointer] = segmentLength;
-                        destinationArray[pointer+1] = (tubeRadius * Math.cos(radialAngle)) + 0.4;
-                        destinationArray[pointer+2] = tubeRadius * Math.sin(radialAngle);
-                    } else {
-                        let axleOffset = i % 2 === 0 ? -2.2 : 2.2;
-                        let wheelAngle = Math.random() * 2.0 * Math.PI;
-                        let wRadius = 0.4;
-                        destinationArray[pointer] = axleOffset + ((Math.random() - 0.5) * 0.4);
-                        destinationArray[pointer+1] = (wRadius * Math.cos(wheelAngle)) - 0.6;
-                        destinationArray[pointer+2] = (i % 3 === 0 ? 0.9 : -0.9);
-                    }
-                } 
-                else { 
-                    if (i < particlePoolSize * 0.85) {
-                        destinationArray[pointer] = (Math.random() - 0.5) * 6.8;
-                        destinationArray[pointer+1] = ((Math.random() - 0.5) * 1.9) + 0.4;
-                        destinationArray[pointer+2] = (Math.random() - 0.5) * 1.9;
-                    } else {
-                        let pantoX = i % 2 === 0 ? -1.8 : 1.8;
-                        destinationArray[pointer] = pantoX + ((Math.random() - 0.5) * 0.3);
-                        destinationArray[pointer+1] = 1.4 + (Math.random() * 0.8);
-                        destinationArray[pointer+2] = (Math.random() - 0.5) * 0.8;
-                    }
-                }
-                pointer += 3;
-            }
-        }
-
-        // Sebaran Awal Partikel
-        for(let i=0; i < currentCoordinates.length; i++) {
-            currentCoordinates[i] = (Math.random() - 0.5) * 30.0;
-        }
-
-        computeTrainMatrix(0, targetCoordinates);
-        coreGeometry.setAttribute('position', new THREE.BufferAttribute(currentCoordinates, 3));
-
-        // Setting Material Asap Putih (Ukuran Diperbesar biar gumpalannya menyatu estetik)
-        const smokeMaterial = new THREE.PointsMaterial({
-            size: 0.45, 
-            map: createSmokeTexture(),
-            transparent: true,
-            opacity: 0.65,
-            blending: THREE.NormalBlending, // NormalBlending bikin tumpukan partikel jadi kabut padat halus
-            depthWrite: false,
-            color: 0xffffff
-        });
-
-        const smokeParticleEngine = new THREE.Points(coreGeometry, smokeMaterial);
-        scene.add(smokeParticleEngine);
-
-        // Latar Belakang Debu Angkasa Redup
-        const environmentCount = 400;
-        const environmentGeometry = new THREE.BufferGeometry();
-        const envPositions = new Float32Array(environmentCount * 3);
-        for(let i=0; i < environmentCount * 3; i++) { envPositions[i] = (Math.random() - 0.5) * 40.0; }
-        environmentGeometry.setAttribute('position', new THREE.BufferAttribute(envPositions, 3));
-        const envMaterial = new THREE.PointsMaterial({ size: 0.02, color: 0x334155, transparent: true, opacity: 0.2 });
-        const globalFieldGroup = new THREE.Points(environmentGeometry, envMaterial);
-        scene.add(globalFieldGroup);
-
-        let morphInterpolationFactor = 0.035; // Gerakan tarikan kabut diatur smooth lembut
-
-        function triggerSmokeMorph(index, name, volt, control, speed, maker, noteTitle, desc, button) {
-            computeTrainMatrix(index, targetCoordinates);
-
-            // Trigger Ledakan Asap Kinetik (Kabut pecah buyar acak pas tombol ditekan)
-            const currentPositions = coreGeometry.attributes.position.array;
-            for(let i=0; i < particlePoolSize * 3; i++) {
-                currentPositions[i] += (Math.random() - 0.5) * 4.0;
+            function createSmokeTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 64; canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+                gradient.addColorStop(0.3, 'rgba(235, 235, 235, 0.15)');
+                gradient.addColorStop(0.7, 'rgba(200, 200, 200, 0.02)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64);
+                return new THREE.CanvasTexture(canvas);
             }
 
-            document.getElementById('active-model').innerText = name;
-            document.getElementById('spec-volt').innerText = volt;
-            document.getElementById('spec-control').innerText = control;
-            document.getElementById('spec-speed').innerText = speed;
-            document.getElementById('spec-maker').innerText = maker;
-            document.getElementById('note-title').innerText = noteTitle;
-            document.getElementById('desc-text').innerText = desc;
+            const particlePoolSize = 6500; // Dikurangi tipis dari 7500 biar HP gak gampang anget / drop FPS
+            const coreGeometry = new THREE.BufferGeometry();
+            const currentCoordinates = new Float32Array(particlePoolSize * 3);
+            const targetCoordinates = new Float32Array(particlePoolSize * 3);
 
-            document.querySelectorAll('.dock-trigger-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+            const noiseVectorBuffer = new Float32Array(particlePoolSize * 3);
+            for(let i = 0; i < particlePoolSize * 3; i++) {
+                noiseVectorBuffer[i] = (Math.random() - 0.5);
+            }
 
-            const telemetryStatus = document.getElementById('status-vector');
-            telemetryStatus.innerText = "VAPOR DISPERSION IN PROGRESS...";
-            setTimeout(() => { telemetryStatus.innerText = "CLOUD CONDENSATION STABLE"; }, 1500);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        const frameClock = new THREE.Clock();
-        function renderLoop() {
-            requestAnimationFrame(renderLoop);
-            const deltaTimeline = frameClock.getElapsedTime();
-
-            const livePosAttribute = coreGeometry.attributes.position;
-
-            // Efek Simulasi Fisika Asap Bergetar Tiup Angin (Turbulensi)
-            for (let i = 0; i < particlePoolSize * 3; i++) {
-                livePosAttribute.array[i] += (targetCoordinates[i] - livePosAttribute.array[i]) * morphInterpolationFactor;
+            function computeTrainMatrix(modelType, destinationArray) {
+                let pointer = 0;
+                const scaleFactor = window.innerWidth <= 768 ? 0.85 : 1.0; // Pengecilan skala objek khusus HP biar gak kepotong screen
                 
-                // Rumus matematika turbulensi gelombang udara bebas pada sumbu X dan Y
-                if(i % 3 === 0) livePosAttribute.array[i] += Math.sin(deltaTimeline * 2.0 + i) * 0.006;
-                if(i % 3 === 1) livePosAttribute.array[i] += Math.cos(deltaTimeline * 2.5 + i) * 0.006;
+                for(let i=0; i < particlePoolSize; i++) {
+                    if(modelType === 0) { 
+                        let rx = noiseVectorBuffer[pointer] * 9.5 * scaleFactor; 
+                        let ry = noiseVectorBuffer[pointer+1] * 2.4 * scaleFactor; 
+                        let rz = noiseVectorBuffer[pointer+2] * 2.2 * scaleFactor; 
+                        if(rx > 3.0 * scaleFactor) {
+                            ry *= (1.0 - (rx - 3.0 * scaleFactor) * 0.3);
+                            rz *= (1.0 - (rx - 3.0 * scaleFactor) * 0.15);
+                        }
+                        destinationArray[pointer] = rx;
+                        destinationArray[pointer+1] = ry + 0.2;
+                        destinationArray[pointer+2] = rz;
+                    } 
+                    else if(modelType === 1) { 
+                        if (i < particlePoolSize * 0.75) {
+                            let segmentLength = noiseVectorBuffer[pointer] * 9.8 * scaleFactor;
+                            let radialAngle = Math.abs(noiseVectorBuffer[pointer+1]) * 2.0 * Math.PI;
+                            let tubeRadiusW = 1.3 * scaleFactor;
+                            let tubeRadiusH = 1.5 * scaleFactor;
+                            destinationArray[pointer] = segmentLength;
+                            destinationArray[pointer+1] = (tubeRadiusH * Math.cos(radialAngle)) + 0.2;
+                            destinationArray[pointer+2] = tubeRadiusW * Math.sin(radialAngle);
+                        } else {
+                            let axleOffset = i % 2 === 0 ? -2.8 * scaleFactor : 2.8 * scaleFactor;
+                            let wheelAngle = Math.abs(noiseVectorBuffer[pointer+2]) * 2.0 * Math.PI;
+                            let wRadius = 0.5 * scaleFactor;
+                            destinationArray[pointer] = axleOffset + (noiseVectorBuffer[pointer] * 0.4);
+                            destinationArray[pointer+1] = (wRadius * Math.cos(wheelAngle)) - 1.0;
+                            destinationArray[pointer+2] = (i % 3 === 0 ? 0.9 * scaleFactor : -0.9 * scaleFactor);
+                        }
+                    } 
+                    else { 
+                        if (i < particlePoolSize * 0.85) {
+                            destinationArray[pointer] = noiseVectorBuffer[pointer] * 9.2 * scaleFactor;
+                            destinationArray[pointer+1] = (noiseVectorBuffer[pointer+1] * 2.5 * scaleFactor) + 0.1;
+                            destinationArray[pointer+2] = noiseVectorBuffer[pointer+2] * 2.3 * scaleFactor;
+                        } else {
+                            let pantoX = i % 2 === 0 ? -2.2 * scaleFactor : 2.2 * scaleFactor;
+                            destinationArray[pointer] = pantoX + (noiseVectorBuffer[pointer] * 0.4);
+                            destinationArray[pointer+1] = (1.6 * scaleFactor) + (Math.abs(noiseVectorBuffer[pointer+1]) * 1.0);
+                            destinationArray[pointer+2] = noiseVectorBuffer[pointer+2] * 0.9 * scaleFactor;
+                        }
+                    }
+                    pointer += 3;
+                }
             }
-            livePosAttribute.needsUpdate = true;
 
-            // Rotasi Pelan Formasi Kabut Kereta
-            smokeParticleEngine.rotation.y = deltaTimeline * 0.1;
-            globalFieldGroup.rotation.y = deltaTimeline * -0.005;
+            for(let i=0; i < currentCoordinates.length; i++) {
+                currentCoordinates[i] = noiseVectorBuffer[i] * 35.0;
+            }
 
-            renderer.render(scene, camera);
+            computeTrainMatrix(0, targetCoordinates);
+            coreGeometry.setAttribute('position', new THREE.BufferAttribute(currentCoordinates, 3));
+
+            const smokeMaterial = new THREE.PointsMaterial({
+                size: window.innerWidth <= 768 ? 0.10 : 0.12, // Partikel lebih kecil di HP agar detail dapet
+                map: createSmokeTexture(),
+                transparent: true,
+                opacity: 0.75,
+                blending: THREE.NormalBlending,
+                depthWrite: false,
+                color: 0xffffff
+            });
+
+            const smokeParticleEngine = new THREE.Points(coreGeometry, smokeMaterial);
+            scene.add(smokeParticleEngine);
+
+            const environmentCount = 300;
+            const environmentGeometry = new THREE.BufferGeometry();
+            const envPositions = new Float32Array(environmentCount * 3);
+            for(let i=0; i < environmentCount * 3; i++) { envPositions[i] = noiseVectorBuffer[i % noiseVectorBuffer.length] * 40.0; }
+            environmentGeometry.setAttribute('position', new THREE.BufferAttribute(envPositions, 3));
+            const envMaterial = new THREE.PointsMaterial({ size: 0.02, color: 0x475569, transparent: true, opacity: 0.2 });
+            const globalFieldGroup = new THREE.Points(environmentGeometry, envMaterial);
+            scene.add(globalFieldGroup);
+
+            const morphInterpolationFactor = 0.04;
+            let timeoutTracker = null;
+
+            window.triggerSmokeMorph = function(index, name, volt, control, speed, maker, noteTitle, desc, button) {
+                if (index < 0 || index > 2 || !button) return;
+
+                computeTrainMatrix(index, targetCoordinates);
+
+                const currentPositions = coreGeometry.attributes.position.array;
+                for(let i=0; i < particlePoolSize * 3; i++) {
+                    currentPositions[i] += noiseVectorBuffer[i] * 4.5;
+                }
+
+                document.getElementById('active-model').innerText = name || "UNKNOWN";
+                document.getElementById('spec-volt').innerText = volt || "-";
+                document.getElementById('spec-control').innerText = control || "-";
+                document.getElementById('spec-speed').innerText = speed || "-";
+                document.getElementById('spec-maker').innerText = maker || "-";
+                document.getElementById('note-title').innerText = noteTitle || "-";
+                document.getElementById('desc-text').innerText = desc || "-";
+
+                document.querySelectorAll('.dock-trigger-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const telemetryStatus = document.getElementById('status-vector');
+                telemetryStatus.innerText = "VAPOR DISPERSION IN PROGRESS...";
+                
+                if(timeoutTracker) clearTimeout(timeoutTracker);
+                timeoutTracker = setTimeout(() => { 
+                    telemetryStatus.innerText = "SMOKE SILHOUETTE CONDENSED"; 
+                }, 1500);
+            };
+
+            const handleResize = () => {
+                const innerMobile = window.innerWidth <= 768;
+                camera.aspect = window.innerWidth / (innerMobile ? window.innerHeight * 0.45 : window.innerHeight);
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, innerMobile ? window.innerHeight * 0.45 : window.innerHeight);
+            };
+            window.addEventListener('resize', handleResize);
+
+            const frameClock = new THREE.Clock();
+            function renderLoop() {
+                requestAnimationFrame(renderLoop);
+                const deltaTimeline = frameClock.getElapsedTime();
+                const livePosAttribute = coreGeometry.attributes.position;
+
+                for (let i = 0; i < particlePoolSize * 3; i++) {
+                    livePosAttribute.array[i] += (targetCoordinates[i] - livePosAttribute.array[i]) * morphInterpolationFactor;
+                    if(i % 3 === 0) livePosAttribute.array[i] += Math.sin(deltaTimeline * 2.5 + i) * 0.004;
+                    if(i % 3 === 1) livePosAttribute.array[i] += Math.cos(deltaTimeline * 3.0 + i) * 0.004;
+                }
+                livePosAttribute.needsUpdate = true;
+
+                smokeParticleEngine.rotation.y = deltaTimeline * 0.12;
+                globalFieldGroup.rotation.y = deltaTimeline * -0.008;
+
+                renderer.render(scene, camera);
+            }
+            renderLoop();
+
+        } catch (error) {
+            console.error("Engine Crash:", error);
+            document.getElementById('error-overlay').style.display = 'flex';
         }
-        
-        renderLoop();
     </script>
 </body>
 </html>
