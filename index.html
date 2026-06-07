@@ -3,156 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRL CLI-125 - Cinematic Experience</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/ScrollTrigger.min.js"></script>
-    <script src="models/CLI125TrainModel.js"></script>
+    <title>KRL Archive - CLI 125</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-main: #f0f0f0;
+            --text-muted: #888888;
+            --accent: #d32f2f; /* Warna merah khas KAI */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* --- INTRO CINEMATIC --- */
+        #intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1.5s ease, visibility 1.5s ease;
+        }
+
+        #intro-text {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            letter-spacing: 5px;
+            opacity: 0;
+            animation: fadeInOut 4s ease forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: scale(0.95); }
+            40% { opacity: 1; transform: scale(1); }
+            80% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.05); }
+        }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to bottom, rgba(5,5,5,0.2), var(--bg-color)), url('1000214710.jpg') no-repeat center center/cover;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 4rem;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: bounce 2s infinite;
+            color: var(--text-muted);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        /* --- STORYTELLING SECTION --- */
+        .story-section {
+            padding: 100px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .story-section.reverse {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .story-text h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .story-text p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .story-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            transition: transform 0.5s ease;
+        }
+
+        .story-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* --- ANIMASI SCROLL (MIMIC CINEMATIC FEEL) --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .story-section, .story-section.reverse {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding: 60px 20px;
+            }
+            .story-section.reverse .story-text {
+                order: -1; /* Teks selalu di atas gambar pada HP */
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- HERO SECTION - CINEMATIC INTRO -->
-    <section id="hero" class="hero">
-        <div class="hero-content">
-            <div id="canvas-container" class="canvas-container"></div>
-            <div class="hero-text">
-                <h1 class="hero-title">KRL CLI-125</h1>
-                <p class="hero-subtitle">Kereta Rel Listrik Generasi Terbaru Indonesia</p>
-                <div class="scroll-indicator">
-                    <span>Scroll untuk explore</span>
-                    <div class="scroll-arrow"></div>
-                </div>
-            </div>
+
+    <!-- Intro Layar Hitam -->
+    <div id="intro-screen">
+        <div id="intro-text">Menelusuri Sejarah Besi...</div>
+    </div>
+
+    <!-- Halaman Utama (Gambar Foto 2 - Maju) -->
+    <section class="hero reveal">
+        <h1>CRRC CLI-125</h1>
+        <p>Generasi Baru Komuter. Menggabungkan estetika modern dengan ketangguhan aerodinamis.</p>
+        <div class="scroll-indicator">Gulir ke bawah</div>
+    </section>
+
+    <!-- Bagian 1: Detail Kepala & Mundur (Foto 1) -->
+    <section class="story-section">
+        <div class="story-text reveal">
+            <h2>Sistem Indikator Mundur</h2>
+            <p>Berbeda dengan lokomotif CC206, kabin masinis CLI-125 terpisah secara struktural dari gerbong penumpang. Saat beroperasi mundur (misalnya menuju arah Jakarta namun kereta bertujuan Bogor), sistem peringatan akan aktif.</p>
+            <p>Garis lampu LED merah menyala terang, dan papan S21 (tanda akhiran kereta) terlihat jelas di sisi kepala kereta, memastikan keamanan standar operasional.</p>
+        </div>
+        <div class="reveal">
+            <img src="1000214717.jpg" alt="CLI-125 Mundur" class="story-image">
         </div>
     </section>
 
-    <!-- INFO SECTION -->
-    <section id="info" class="info-section">
-        <div class="container">
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Sejarah</h3>
-                    <p>Diproduksi oleh PT Inka dan Hyundai Rotem, CLI-125 merupakan generasi terbaru kereta rel listrik di Indonesia dengan teknologi modern dan efisiensi tinggi.</p>
-                </div>
-                <div class="info-card">
-                    <h3>Tahun Produksi</h3>
-                    <p>Mulai diproduksi pada tahun 2018 dan terus dikembangkan untuk memenuhi kebutuhan transportasi masyarakat Jakarta dan sekitarnya.</p>
-                </div>
-                <div class="info-card">
-                    <h3>Spesifikasi</h3>
-                    <p><strong>Total Gerbong:</strong> 12<br><strong>Kapasitas:</strong> 1.400+ penumpang<br><strong>Kecepatan Maksimal:</strong> 100 km/h</p>
-                </div>
-            </div>
+    <!-- Bagian 2: Livery Samping (Foto 3) -->
+    <section class="story-section reverse">
+        <div class="reveal">
+            <img src="1000214709.jpg" alt="CLI-125 Samping" class="story-image">
+        </div>
+        <div class="story-text reveal">
+            <h2>Harmoni Livery Ombak</h2>
+            <p>Desain visual CLI-125 tidak sekadar warna, melainkan memiliki ritme. Pada skala 1:1 di dunia nyata, formasi *trainset* ini memiliki keunikan tersendiri.</p>
+            <p>Gerbong 1 hingga 6 menampilkan corak *livery* merah yang mengalun naik. Sebaliknya, pada gerbong 7 hingga 12, *livery* tersebut didesain menurun, menciptakan keseimbangan visual layaknya gelombang saat melaju.</p>
         </div>
     </section>
 
-    <!-- GALLERY SECTION -->
-    <section id="gallery" class="gallery-section">
-        <div class="container">
-            <h2 class="section-title">Galeri CLI-125</h2>
-            <div class="gallery-grid">
-                <div class="gallery-item">
-                    <img src="https://via.placeholder.com/400x300?text=CLI-125+Mundur" alt="CLI-125 Mundur">
-                    <div class="overlay">
-                        <p>Mundur - Garis Merah & S21 Terbuka</p>
-                    </div>
-                </div>
-                <div class="gallery-item">
-                    <img src="https://via.placeholder.com/400x300?text=CLI-125+Maju" alt="CLI-125 Maju">
-                    <div class="overlay">
-                        <p>Maju - S21 Tertutup</p>
-                    </div>
-                </div>
-                <div class="gallery-item">
-                    <img src="https://via.placeholder.com/400x300?text=CLI-125+Samping" alt="CLI-125 Samping">
-                    <div class="overlay">
-                        <p>Livery Wave Pattern</p>
-                    </div>
-                </div>
-                <div class="gallery-item">
-                    <img src="https://via.placeholder.com/400x300?text=CLI-125+Interior" alt="CLI-125 Interior">
-                    <div class="overlay">
-                        <p>Interior Penumpang</p>
-                    </div>
-                </div>
-            </div>
+    <!-- Bagian 3: Interior (Foto 4) -->
+    <section class="story-section">
+        <div class="story-text reveal">
+            <h2>Ruang Kabin Penumpang</h2>
+            <p>Kenyamanan tetap menjadi prioritas. Interior CLI-125 dirancang dengan pencahayaan yang merata, susunan kursi longitudinal, dan ruang berdiri yang luas untuk mengakomodasi kepadatan rute komuter.</p>
+        </div>
+        <div class="reveal">
+            <img src="1000214718.jpg" alt="Interior CLI-125" class="story-image">
         </div>
     </section>
 
-    <!-- 3D INTERACTIVE SECTION -->
-    <section id="interactive" class="interactive-section">
-        <div class="container">
-            <h2 class="section-title">Jelajahi CLI-125 Secara Interaktif</h2>
-            <div id="interactive-canvas" class="interactive-canvas"></div>
-            <div class="controls-info">
-                <p>💡 Drag untuk rotasi | Scroll untuk zoom | Double-click untuk reset</p>
-            </div>
-        </div>
-    </section>
+    <script>
+        // Logika untuk menghilangkan layar intro setelah 4.5 detik
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const intro = document.getElementById('intro-screen');
+                intro.style.opacity = '0';
+                intro.style.visibility = 'hidden';
+                
+                // Memicu animasi hero section setelah intro selesai
+                setTimeout(revealElements, 500); 
+            }, 4500);
+        });
 
-    <!-- DETAILED SPECS SECTION -->
-    <section id="specs" class="specs-section">
-        <div class="container">
-            <h2 class="section-title">Spesifikasi Lengkap CLI-125</h2>
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <h4>🚂 Daya Traksi</h4>
-                    <p>1.620 kW (per trainset)</p>
-                </div>
-                <div class="spec-item">
-                    <h4>⚡ Tegangan</h4>
-                    <p>1.500 V DC</p>
-                </div>
-                <div class="spec-item">
-                    <h4>📏 Panjang Total</h4>
-                    <p>142,8 m (12 gerbong)</p>
-                </div>
-                <div class="spec-item">
-                    <h4>⚖️ Berat Kosong</h4>
-                    <p>540 ton</p>
-                </div>
-                <div class="spec-item">
-                    <h4>👥 Kapasitas</h4>
-                    <p>1.400+ penumpang</p>
-                </div>
-                <div class="spec-item">
-                    <h4>🏃 Akselerasi</h4>
-                    <p>1,0 m/s²</p>
-                </div>
-            </div>
-        </div>
-    </section>
+        // Logika untuk mendeteksi elemen saat digulir (Scroll Animation)
+        function revealElements() {
+            var reveals = document.querySelectorAll('.reveal');
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 100; // Jarak sebelum elemen muncul
 
-    <!-- LIVERY SECTION -->
-    <section id="livery" class="livery-section">
-        <div class="container">
-            <h2 class="section-title">Desain Livery CLI-125</h2>
-            <div class="livery-content">
-                <div class="livery-info">
-                    <h3>Pattern Unik Wave Design</h3>
-                    <p><strong>Gerbong 1-6:</strong> Warna merah naik - melambangkan energi dan kecepatan.</p>
-                    <p><strong>Gerbong 7-12:</strong> Warna merah wave/turun - menambah estetika modern dan dinamis.</p>
-                    <p>Kombinasi warna putih dan merah dengan aksen hitam menciptakan identitas visual yang kuat dan mudah dikenali.</p>
-                </div>
-                <div class="livery-visual">
-                    <div class="livery-car car-1-6">
-                        <div class="livery-stripe stripe-up"></div>
-                        <p>Gerbong 1-6</p>
-                    </div>
-                    <div class="livery-car car-7-12">
-                        <div class="livery-stripe stripe-wave"></div>
-                        <p>Gerbong 7-12</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add('active');
+                }
+            }
+        }
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <p>&copy; 2026 KRL CLI-125 Indonesia. Dibuat dengan ❤️ untuk Indonesia.</p>
-    </footer>
-
-    <script src="script.js"></script>
+        window.addEventListener('scroll', revealElements);
+    </script>
 </body>
 </html>
