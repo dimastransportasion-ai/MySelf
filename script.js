@@ -1,9 +1,14 @@
+// Load CLI125TrainModel class
+const script = document.createElement('script');
+script.src = 'models/CLI125TrainModel.js';
+document.head.appendChild(script);
+
 // GSAP Register ScrollTrigger
 gsap.registerPlugin(ScrollTrigger);
 
 // ===== THREE.JS SETUP FOR HERO =====
 let heroScene, heroCamera, heroRenderer;
-let trainModel;
+let cli125Model;
 
 function initHeroScene() {
     const canvas = document.getElementById('canvas-container');
@@ -18,25 +23,42 @@ function initHeroScene() {
     heroRenderer.setClearColor(0x1a1a1a, 1);
     canvas.appendChild(heroRenderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Advanced lighting setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     heroScene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    directionalLight.position.set(8, 8, 8);
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
     heroScene.add(directionalLight);
 
-    // Create simplified train model for hero
-    createTrainModel();
+    // Red accent light (cinematic)
+    const redLight = new THREE.PointLight(0xDC143C, 0.4, 20);
+    redLight.position.set(5, 3, 5);
+    heroScene.add(redLight);
 
-    heroCamera.position.z = 5;
+    // Create CLI-125 train model with delay
+    setTimeout(() => {
+        if (typeof CLI125TrainModel !== 'undefined') {
+            cli125Model = new CLI125TrainModel(heroScene);
+        }
+    }, 100);
+
+    heroCamera.position.z = 6;
+    heroCamera.position.y = 0.5;
 
     // Animation loop
     function animate() {
         requestAnimationFrame(animate);
-        if (trainModel) {
-            trainModel.rotation.y += 0.003;
+        
+        if (cli125Model) {
+            const trainGroup = cli125Model.getTrainGroup();
+            trainGroup.rotation.y += 0.005;
+            // Subtle floating motion
+            trainGroup.position.y = Math.sin(Date.now() * 0.0005) * 0.15;
         }
+        
         heroRenderer.render(heroScene, heroCamera);
     }
     animate();
@@ -51,63 +73,84 @@ function initHeroScene() {
     });
 }
 
-function createTrainModel() {
-    const group = new THREE.Group();
-
-    // Create 12 train cars
-    for (let i = 0; i < 12; i++) {
-        const carGeometry = new THREE.BoxGeometry(1, 0.5, 0.3);
-        let carMaterial;
-
-        // Determine livery - Gerbong 1-6 merah naik, 7-12 merah wave
-        if (i < 6) {
-            carMaterial = new THREE.MeshPhongMaterial({ color: 0xDC143C });
-        } else {
-            carMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-        }
-
-        const car = new THREE.Mesh(carGeometry, carMaterial);
-        car.position.x = i * 0.25 - 1.5;
-        group.add(car);
-
-        // Add window details
-        const windowGeometry = new THREE.BoxGeometry(0.15, 0.2, 0.05);
-        const windowMaterial = new THREE.MeshPhongMaterial({ color: 0x87CEEB });
-        const window = new THREE.Mesh(windowGeometry, windowMaterial);
-        window.position.z = 0.18;
-        window.position.x = i * 0.25 - 1.5 + 0.1;
-        group.add(window);
-    }
-
-    heroScene.add(group);
-    trainModel = group;
-}
-
 // ===== SCROLL ANIMATIONS =====
 function initScrollAnimations() {
-    // Fade in cards on scroll
-    const cards = document.querySelectorAll('.fade-in-up');
-    cards.forEach((card, index) => {
-        gsap.to(card, {
+    // Fade in info cards
+    const infoCards = document.querySelectorAll('.info-card');
+    infoCards.forEach((card, index) => {
+        gsap.from(card, {
             scrollTrigger: {
                 trigger: card,
-                start: 'top 80%',
-                toggleActions: 'play none none reverse'
+                start: 'top 75%',
             },
-            opacity: 1,
+            opacity: 0,
+            y: 30,
             duration: 0.8,
-            delay: index * 0.2
+            delay: index * 0.15
         });
     });
 
-    // Hover effect for gallery items
+    // Gallery items with stagger
     const galleryItems = document.querySelectorAll('.gallery-item');
-    galleryItems.forEach(item => {
+    galleryItems.forEach((item, index) => {
+        gsap.from(item, {
+            scrollTrigger: {
+                trigger: item,
+                start: 'top 75%',
+            },
+            opacity: 0,
+            scale: 0.9,
+            duration: 0.8,
+            delay: index * 0.1
+        });
+
+        // Hover effects
         item.addEventListener('mouseenter', function() {
-            gsap.to(this, { duration: 0.3, scale: 1.05 });
+            gsap.to(this, { 
+                duration: 0.4, 
+                scale: 1.08, 
+                boxShadow: '0 25px 50px rgba(220,20,60,0.4)',
+                ease: 'power2.out'
+            });
         });
         item.addEventListener('mouseleave', function() {
-            gsap.to(this, { duration: 0.3, scale: 1 });
+            gsap.to(this, { 
+                duration: 0.4, 
+                scale: 1, 
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                ease: 'power2.out'
+            });
+        });
+    });
+
+    // Spec items animation
+    const specItems = document.querySelectorAll('.spec-item');
+    specItems.forEach((item, index) => {
+        gsap.from(item, {
+            scrollTrigger: {
+                trigger: item,
+                start: 'top 80%',
+            },
+            opacity: 0,
+            y: 25,
+            duration: 0.7,
+            delay: index * 0.1,
+            ease: 'power2.out'
+        });
+    });
+
+    // Livery content animation
+    const liveryItems = document.querySelectorAll('.livery-car');
+    liveryItems.forEach((item, index) => {
+        gsap.from(item, {
+            scrollTrigger: {
+                trigger: item,
+                start: 'top 80%',
+            },
+            opacity: 0,
+            x: index === 0 ? -30 : 30,
+            duration: 0.8,
+            delay: index * 0.2
         });
     });
 }
@@ -117,9 +160,12 @@ let interactiveScene, interactiveCamera, interactiveRenderer;
 let interactiveTrainModel;
 let mouse = { x: 0, y: 0 };
 let targetRotation = { x: 0, y: 0 };
+let isDragging = false;
 
 function initInteractiveScene() {
     const canvas = document.getElementById('interactive-canvas');
+    if (!canvas || !canvas.parentElement) return;
+
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
 
@@ -127,35 +173,65 @@ function initInteractiveScene() {
     interactiveScene.background = new THREE.Color(0xf5f5f5);
 
     interactiveCamera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    interactiveCamera.position.z = 4;
+    interactiveCamera.position.z = 5.5;
 
-    interactiveRenderer = new THREE.WebGLRenderer({ antialias: true });
+    interactiveRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     interactiveRenderer.setSize(width, height);
     interactiveRenderer.setPixelRatio(window.devicePixelRatio);
+    interactiveRenderer.shadowMap.enabled = true;
     canvas.appendChild(interactiveRenderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // Cinematic lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     interactiveScene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    directionalLight.position.set(10, 8, 10);
+    directionalLight.castShadow = true;
     interactiveScene.add(directionalLight);
 
-    // Create detailed train
-    createDetailedTrain();
+    // Rim light for depth
+    const rimLight = new THREE.DirectionalLight(0x87CEEB, 0.35);
+    rimLight.position.set(-10, 3, -10);
+    interactiveScene.add(rimLight);
+
+    // Create CLI-125 train
+    if (typeof CLI125TrainModel !== 'undefined') {
+        interactiveTrainModel = new CLI125TrainModel(interactiveScene);
+    }
 
     // Mouse events
-    document.addEventListener('mousemove', onMouseMove);
-    interactiveRenderer.domElement.addEventListener('wheel', onMouseWheel);
-    interactiveRenderer.domElement.addEventListener('dblclick', resetView);
+    canvas.addEventListener('mousedown', () => { isDragging = true; });
+    document.addEventListener('mouseup', () => { isDragging = false; });
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('wheel', onMouseWheel, { passive: false });
+    canvas.addEventListener('dblclick', resetView);
+
+    // Touch events
+    canvas.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+    });
+    document.addEventListener('touchend', () => { isDragging = false; });
+    canvas.addEventListener('touchmove', (e) => {
+        if (isDragging && e.touches.length === 1) {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+        }
+    }, { passive: true });
 
     // Animation loop
     function animate() {
         requestAnimationFrame(animate);
         if (interactiveTrainModel) {
-            interactiveTrainModel.rotation.y += (targetRotation.y - interactiveTrainModel.rotation.y) * 0.1;
-            interactiveTrainModel.rotation.x += (targetRotation.x - interactiveTrainModel.rotation.x) * 0.1;
+            const trainGroup = interactiveTrainModel.getTrainGroup();
+            trainGroup.rotation.y += (targetRotation.y - trainGroup.rotation.y) * 0.08;
+            trainGroup.rotation.x += (targetRotation.x - trainGroup.rotation.x) * 0.08;
         }
         interactiveRenderer.render(interactiveScene, interactiveCamera);
     }
@@ -171,49 +247,9 @@ function initInteractiveScene() {
     });
 }
 
-function createDetailedTrain() {
-    const group = new THREE.Group();
-
-    // Create 12 detailed train cars with livery
-    for (let i = 0; i < 12; i++) {
-        const carGroup = new THREE.Group();
-
-        // Car body
-        const carGeometry = new THREE.BoxGeometry(0.8, 0.4, 0.25);
-        let carColor = i < 6 ? 0xDC143C : 0xFFFFFF; // Red for 1-6, white for 7-12
-        const carMaterial = new THREE.MeshPhongMaterial({ color: carColor });
-        const carMesh = new THREE.Mesh(carGeometry, carMaterial);
-        carGroup.add(carMesh);
-
-        // Windows
-        const windowGeometry = new THREE.BoxGeometry(0.12, 0.15, 0.03);
-        const windowMaterial = new THREE.MeshPhongMaterial({ color: 0x87CEEB, emissive: 0x4da6ff });
-        for (let w = 0; w < 3; w++) {
-            const window = new THREE.Mesh(windowGeometry, windowMaterial);
-            window.position.x = -0.2 + w * 0.2;
-            window.position.z = 0.13;
-            carGroup.add(window);
-        }
-
-        // Livery detail stripe
-        if (i < 6) {
-            const stripeGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.26);
-            const stripeMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
-            stripe.position.y = 0.15;
-            stripe.position.z = 0.002;
-            carGroup.add(stripe);
-        }
-
-        carGroup.position.x = (i - 5.5) * 0.85;
-        group.add(carGroup);
-    }
-
-    interactiveScene.add(group);
-    interactiveTrainModel = group;
-}
-
 function onMouseMove(event) {
+    if (!isDragging) return;
+
     const canvas = document.getElementById('interactive-canvas');
     if (!canvas) return;
 
@@ -224,21 +260,33 @@ function onMouseMove(event) {
     mouse.x = (x / rect.width) * 2 - 1;
     mouse.y = -(y / rect.height) * 2 + 1;
 
-    targetRotation.y = mouse.x * Math.PI;
-    targetRotation.x = mouse.y * Math.PI * 0.5;
+    targetRotation.y = mouse.x * Math.PI * 0.8;
+    targetRotation.x = mouse.y * Math.PI * 0.4;
 }
 
 function onMouseWheel(event) {
     event.preventDefault();
-    interactiveCamera.position.z += event.deltaY * 0.005;
-    interactiveCamera.position.z = Math.max(2, Math.min(10, interactiveCamera.position.z));
+    interactiveCamera.position.z += event.deltaY * 0.008;
+    interactiveCamera.position.z = Math.max(2, Math.min(12, interactiveCamera.position.z));
 }
 
 function resetView() {
     if (interactiveTrainModel) {
-        gsap.to(interactiveTrainModel.rotation, { duration: 0.8, x: 0, y: 0 });
-        gsap.to(interactiveCamera.position, { duration: 0.8, z: 4 });
+        const trainGroup = interactiveTrainModel.getTrainGroup();
+        gsap.to(trainGroup.rotation, { duration: 0.8, x: 0, y: 0, ease: 'back.out' });
+        gsap.to(interactiveCamera.position, { duration: 0.8, z: 5.5, ease: 'back.out' });
         targetRotation = { x: 0, y: 0 };
+    }
+}
+
+// ===== FOOTER WATERMARK =====
+function initFooterWatermark() {
+    const footer = document.querySelector('.footer');
+    if (footer) {
+        const watermarkSpan = document.createElement('span');
+        watermarkSpan.style.cssText = 'position: relative; display: inline-block; margin-left: 1.5rem; color: #FFD700; font-weight: bold; font-size: 1rem; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);';
+        watermarkSpan.innerHTML = '✦ By Dimas ✦';
+        footer.appendChild(watermarkSpan);
     }
 }
 
@@ -246,8 +294,11 @@ function resetView() {
 window.addEventListener('load', () => {
     initHeroScene();
     initScrollAnimations();
-    setTimeout(() => initInteractiveScene(), 500);
+    initFooterWatermark();
+    setTimeout(() => {
+        initInteractiveScene();
+    }, 500);
 });
 
-// Smooth scroll behavior
+// Smooth scroll
 document.documentElement.style.scrollBehavior = 'smooth';
