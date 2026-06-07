@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KRL Indonesia - Optimized Solid Train & Smoke Aura Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;800&family=Space+Grotesk:wght=500;700&display=swap" rel="stylesheet">
+    <title>KRL Indonesia - Cinematic Volumetric Smoke Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght=500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --bg-dark: #020406;
-            --panel-bg: rgba(5, 7, 12, 0.9);
-            --accent-smoke: #ffffff;
+            --panel-bg: rgba(5, 7, 12, 0.85);
             --accent-red: #ff3344;
             --text-main: #f8fafc;
-            --text-muted: #64748b;
             --glow-smoke: 0 0 25px rgba(255, 255, 255, 0.15);
         }
 
@@ -28,21 +26,26 @@
             min-height: 100vh;
         }
 
+        /* Canvas Cinematic Background */
         #canvas-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none;
+            z-index: 1; pointer-events: none;
+        }
+
+        /* Efek Vignette Biar Makin Cinematic */
+        .cinematic-vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #020406 100%);
+            z-index: 2; pointer-events: none;
         }
 
         .dimas-watermark {
-            position: fixed;
-            top: 24px; left: 24px;
-            background: rgba(5, 7, 12, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 20px; border-radius: 12px;
-            font-family: 'Space Grotesk', sans-serif; font-size: 12px;
-            letter-spacing: 2px; z-index: 100; backdrop-filter: blur(10px);
+            position: fixed; top: 24px; left: 24px;
+            background: rgba(5, 7, 12, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px; border-radius: 12px; font-family: 'Space Grotesk', sans-serif; 
+            font-size: 12px; letter-spacing: 2px; z-index: 100; backdrop-filter: blur(10px);
             font-weight: 700; color: #fff;
         }
 
@@ -59,44 +62,34 @@
             gap: 24px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); height: fit-content;
         }
 
-        .header-meta p { font-size: 10px; color: var(--accent-red); font-weight: 800; letter-spacing: 4px; text-transform: uppercase; }
-        .header-meta h1 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; background: linear-gradient(45deg, #fff, #475569); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .history-pipeline { display: flex; flex-direction: column; gap: 20px; border-left: 1px dashed rgba(255, 255, 255, 0.1); padding-left: 20px; margin-top: 10px; }
-        .pipeline-node h3 { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-        .pipeline-node p { font-size: 12px; color: #94a3b8; line-height: 1.5; }
-
-        .tech-spec-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .spec-container-box { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 14px; border-radius: 14px; }
-        .spec-container-box span { font-size: 9px; color: var(--text-muted); text-transform: uppercase; display: block; }
+        .header-meta h1 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; }
+        .center-hud-telemetry { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 120px; text-align: center; text-shadow: 0 5px 20px rgba(0,0,0,0.8); }
+        .center-hud-telemetry h2 { font-family: 'Space Grotesk', sans-serif; font-size: 48px; font-weight: 800; }
+        
+        .spec-container-box { background: rgba(255, 255, 255, 0.05); padding: 14px; border-radius: 14px; }
         .spec-container-box p { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: #f1f5f9; }
-
-        .center-hud-telemetry { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 120px; text-align: center; }
-        .center-hud-telemetry h2 { font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 700; text-shadow: 0 0 25px rgba(255, 255, 255, 0.2); }
-        .center-hud-telemetry p { font-size: 10px; color: #94a3b8; letter-spacing: 4px; text-transform: uppercase; }
 
         .bottom-dock-menu {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100;
-            display: flex; gap: 8px; background: rgba(5, 7, 12, 0.85); padding: 8px 16px;
-            border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5); width: max-content; max-width: 90%;
+            display: flex; gap: 8px; background: rgba(5, 7, 12, 0.95); padding: 8px 16px;
+            border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
         }
         .dock-trigger-btn {
-            background: transparent; border: none; color: #475569; padding: 10px 18px;
+            background: transparent; border: none; color: #64748b; padding: 10px 18px;
             border-radius: 30px; font-size: 12px; font-weight: 700; cursor: pointer;
-            font-family: 'Space Grotesk'; transition: all 0.3s ease; white-space: nowrap;
+            font-family: 'Space Grotesk'; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .dock-trigger-btn.active, .dock-trigger-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); box-shadow: var(--glow-smoke); }
+        .dock-trigger-btn.active, .dock-trigger-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.15); box-shadow: var(--glow-smoke); }
 
         @media (max-width: 768px) {
             body { overflow-y: scroll; }
-            #canvas-container { position: absolute; height: 42vh; background: linear-gradient(to bottom, #020406 85%, transparent); }
-            .hud-grid-system { grid-template-columns: 1fr; padding: 16px; padding-top: 44vh; gap: 20px; padding-bottom: 100px; }
-            .hud-panel-card { background: rgba(5, 7, 12, 0.95); padding: 22px; border-radius: 20px; }
-            .center-hud-telemetry { grid-row: 1; margin-bottom: -10px; }
-            .center-hud-telemetry h2 { font-size: 32px; }
-            .bottom-dock-menu { bottom: 12px; padding: 6px 10px; }
-            .dock-trigger-btn { padding: 8px 12px; font-size: 11px; }
+            #canvas-container { height: 50vh; }
+            .cinematic-vignette { height: 50vh; background: linear-gradient(to bottom, transparent 60%, #020406 100%); }
+            .hud-grid-system { grid-template-columns: 1fr; padding: 16px; padding-top: 48vh; gap: 20px; padding-bottom: 100px; }
+            .hud-panel-card { background: rgba(5, 7, 12, 0.98); }
+            .center-hud-telemetry { grid-row: 1; padding-bottom: 0; margin-bottom: -15px; }
+            .center-hud-telemetry h2 { font-size: 36px; }
+            .bottom-dock-menu { bottom: 12px; }
         }
     </style>
 </head>
@@ -104,284 +97,332 @@
 
     <div class="dimas-watermark"><span>By Dimas</span></div>
     <div id="canvas-container"></div>
+    <div class="cinematic-vignette"></div>
 
     <div class="hud-grid-system">
         <div class="hud-panel-card">
             <div class="header-meta">
-                <p>SOLID MODEL & AURA ENGINE v7.1</p>
+                <p style="color:var(--accent-red); font-size:10px; letter-spacing:3px;">CINEMATIC V8.0</p>
                 <h1>SMOKE SYSTEM</h1>
             </div>
             <div>
-                <div class="history-pipeline">
-                    <div class="pipeline-node">
-                        <h3>1925 — Jalur Pertama</h3>
-                        <p>Jalur LAA Priok resmi dialiri arus 1500 V DC, fondasi utama komuter listrik tanah air.</p>
-                    </div>
-                    <div class="pipeline-node">
-                        <h3>Juni 2025 — Seri CLI-125</h3>
-                        <p>KRL modern impor asal manufaktur CRRC Sifang yang mengedepankan efisiensi traksi tinggi.</p>
-                    </div>
-                    <div class="pipeline-node">
-                        <h3>Desember 2025 — Seri CLI-225</h3>
-                        <p>Karya anak bangsa besutan PT INKA Madiun dengan desain kabin futuristik penembang zaman.</p>
-                    </div>
-                </div>
+                <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;" id="desc-text">Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025). Menggunakan kesatuan sistem manajemen data TCMS terpadu.</p>
             </div>
         </div>
 
         <div class="center-hud-telemetry">
-            <p id="status-vector">SOLID BODY & AURA VAPOR ACTIVE</p>
+            <p id="status-vector" style="font-size: 11px; letter-spacing: 4px; color: #94a3b8;">SYSTEM STABLE</p>
             <h2 id="active-model">SERI CLI-125</h2>
         </div>
 
         <div class="hud-panel-card">
-            <div>
-                <h2 style="font-size: 13px; margin-bottom: 4px; font-family: 'Space Grotesk';">SYSTEM ARCHITECTURE</h2>
-                <p style="font-size: 12px; color: #94a3b8;" id="desc-text">Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025). Menggunakan kesatuan sistem manajemen data TCMS terpadu.</p>
-            </div>
-            <div class="tech-spec-layout">
-                <div class="spec-container-box"><span>Tegangan Input</span><p id="spec-volt">1500 V DC</p></div>
-                <div class="spec-container-box"><span>Sistem Kontrol</span><p id="spec-control">IGBT-VVVF CRRC</p></div>
-                <div class="spec-container-box"><span>Kecepatan Maks</span><p id="spec-speed">120 KM/H</p></div>
-                <div class="spec-container-box"><span>Manufaktur</span><p id="spec-maker">CRRC Sifang</p></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="spec-container-box"><span style="font-size:9px; color:#64748b;">Tegangan</span><p id="spec-volt">1500 V DC</p></div>
+                <div class="spec-container-box"><span style="font-size:9px; color:#64748b;">Kontrol</span><p id="spec-control">IGBT-VVVF CRRC</p></div>
+                <div class="spec-container-box"><span style="font-size:9px; color:#64748b;">Kecepatan</span><p id="spec-speed">120 KM/H</p></div>
+                <div class="spec-container-box"><span style="font-size:9px; color:#64748b;">Pabrikan</span><p id="spec-maker">CRRC Sifang</p></div>
             </div>
         </div>
     </div>
 
     <div class="bottom-dock-menu">
-        <button class="dock-trigger-btn active" onclick="triggerSmokeMorph(0, 'SERI CLI-125', '1500 V DC', 'IGBT-VVVF CRRC', '120 KM/H', 'CRRC Sifang', 'Konfigurasi motor traksi digital KRL generasi terbaru buatan Tiongkok (Juni 2025).', this)">CLI-125</button>
-        <button class="dock-trigger-btn" onclick="triggerSmokeMorph(1, 'SERI CLI-225', '1500 V DC', 'VVVF-IGBT Toyo', '120 KM/H', 'PT INKA', 'KRL kebanggaan produksi PT INKA dengan struktur eksterior stainless steel kokoh anti korosi.', this)">CLI-225</button>
-        <button class="dock-trigger-btn" onclick="triggerSmokeMorph(2, 'SERI JR-205', '1500 V DC', 'Rheostatic / VVVF', '100 KM/H', 'Japan Rail', 'Armada legendaris andalan lintas komuter yang mendominasi sejarah modifikasi teknologi Jabodetabek.', this)">SERI JR-205</button>
+        <button class="dock-trigger-btn active" onclick="triggerSmokeTransition(0, 'SERI CLI-125', '1500 V DC', 'IGBT-VVVF CRRC', '120 KM/H', 'CRRC Sifang', 'KRL modern impor asal manufaktur CRRC Sifang yang mengedepankan efisiensi traksi tinggi untuk lintas komuter.', this)">CLI-125</button>
+        <button class="dock-trigger-btn" onclick="triggerSmokeTransition(1, 'SERI CLI-225', '1500 V DC', 'VVVF-IGBT Toyo', '120 KM/H', 'PT INKA', 'Karya anak bangsa besutan PT INKA Madiun dengan desain aerodinamis dan struktur eksterior stainless steel.', this)">CLI-225</button>
+        <button class="dock-trigger-btn" onclick="triggerSmokeTransition(2, 'SERI JR-205', '1500 V DC', 'Rheostatic / VVVF', '100 KM/H', 'Japan Rail', 'Armada KRL Commuter Line legendaris andalan lintas Jabodetabek. Ciri khas wajah kotak dengan striping merah kuning.', this)">JR-205</button>
     </div>
 
     <script>
         "use strict";
 
-        // Inisialisasi Utama Core WebGL Scene & Camera
+        // SETUP THREE.JS
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020406, 0.025);
+        scene.fog = new THREE.FogExp2(0x020406, 0.04);
 
         const isMobile = window.innerWidth <= 768;
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / (isMobile ? window.innerHeight * 0.42 : window.innerHeight), 0.1, 1000);
-        camera.position.set(0, 3.5, 9);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, isMobile ? window.innerHeight * 0.42 : window.innerHeight);
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / (isMobile ? window.innerHeight * 0.5 : window.innerHeight), 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, isMobile ? window.innerHeight * 0.5 : window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Efek warna film cinematic
+        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
-        // Pencahayaan (Lighting System) untuk Dimensi Objek 3D
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        // PENCAHAYAAN CINEMATIC (KEY, FILL, RIM LIGHT)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        directionalLight.position.set(5, 10, 7);
-        scene.add(directionalLight);
-        const blueGlow = new THREE.PointLight(0x00f0ff, 2, 8);
-        blueGlow.position.set(0, -1, 2);
-        scene.add(blueGlow);
+        
+        const rimLight = new THREE.DirectionalLight(0xaaccff, 2.5);
+        rimLight.position.set(-5, 10, -10); // Cahaya dari belakang untuk outline dramatis
+        scene.add(rimLight);
 
-        // Induk Group Pivot untuk Tata Kelola Rotasi Gerbong
-        const trainPivotGroup = new THREE.Group();
-        scene.add(trainPivotGroup);
+        const keyLight = new THREE.SpotLight(0xffffff, 3.0);
+        keyLight.position.set(10, 15, 10);
+        keyLight.angle = Math.PI / 6;
+        keyLight.penumbra = 0.5;
+        scene.add(keyLight);
 
-        // Definisikan Material Tekstur Bodi Kereta (Konstanta)
-        const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.8 });
-        const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1 });
-        const stripMaterial = new THREE.MeshBasicMaterial({ color: 0xff3344 }); 
-        const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x020406, roughness: 0.7 });
+        // Induk KRL
+        const trainPivot = new THREE.Group();
+        scene.add(trainPivot);
 
-        let currentActiveModel = 0;
-        let targetRotationSpeed = 0.01;
-        let burstEnergy = 0;
-        let animationId = null; // Menyimpan ID Animasi Frame untuk mencegah Kebocoran Memori
+        // --- FUNGSI PEMBUATAN MODEL KRL INDONESIA (PROCEDURAL DETAIL) ---
+        function buildIndonesianKRL(type) {
+            while(trainPivot.children.length > 0) { trainPivot.remove(trainPivot.children[0]); }
+            const train = new THREE.Group();
 
-        // Generator Perakitan Mesh 3D Gerbong KRL Kontekstual
-        function buildTrainMesh(type) {
-            while(trainPivotGroup.children.length > 0) { 
-                trainPivotGroup.remove(trainPivotGroup.children[0]); 
-            }
+            // Material Dasar
+            const steelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
+            const darkGlassMat = new THREE.MeshStandardMaterial({ color: 0x050505, metalness: 1.0, roughness: 0.0 });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
 
-            const trainContainer = new THREE.Group();
+            // Bodi Utama
+            const bodyGeom = new THREE.BoxGeometry(2.4, 2.8, 12);
+            const body = new THREE.Mesh(bodyGeom, steelMat);
+            body.position.y = 1.8;
+            train.add(body);
+
+            // Muka Depan (Face)
+            let faceColor = 0xffffff;
+            if(type === 0) faceColor = 0x475569; // CLI-125: Abu tua
+            if(type === 1) faceColor = 0x2563eb; // CLI-225: Biru INKA
+            if(type === 2) faceColor = 0xffcc00; // JR-205: Kuning khas Commuter
+
+            const faceMat = new THREE.MeshStandardMaterial({ color: faceColor, roughness: 0.4 });
+            const faceGeom = new THREE.BoxGeometry(2.42, 2.8, 0.3);
+            const face = new THREE.Mesh(faceGeom, faceMat);
+            face.position.set(0, 1.8, 6.0);
             
-            let bLength = 4.8, bWidth = 1.4, bHeight = 1.5;
-            if(type === 1) { bLength = 5.2; bWidth = 1.35; } 
-            if(type === 2) { bLength = 4.6; bHeight = 1.6; } 
+            // Variasi bentuk muka
+            if(type !== 2) {
+                // Moncong aerodinamis buat tipe modern
+                faceGeom.translate(0, 0, 0.2);
+                face.rotation.x = -0.1;
+            }
+            train.add(face);
 
-            const bodyGeom = new THREE.BoxGeometry(bLength, bHeight, bWidth);
-            const mainBody = new THREE.Mesh(bodyGeom, bodyMaterial);
-            mainBody.position.y = 0.4;
-            trainContainer.add(mainBody);
-
-            const glassGeom = new THREE.BoxGeometry(0.1, bHeight * 0.5, bWidth * 0.8);
-            const frontGlass = new THREE.Mesh(glassGeom, windowMaterial);
-            frontGlass.position.set(bLength/2 + 0.01, 0.5, 0);
-            trainContainer.add(frontGlass);
-
-            const stripGeom = new THREE.BoxGeometry(bLength + 0.04, 0.1, bWidth + 0.04);
-            const redStrip = new THREE.Mesh(stripGeom, stripMaterial);
-            redStrip.position.y = 0.1;
-            trainContainer.add(redStrip);
-
-            const wheelGeom = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 16);
-            wheelGeom.rotateX(Math.PI / 2);
-
-            const wheelPositions = [
-                [-bLength/3, -bHeight/2, bWidth/2],
-                [-bLength/3, -bHeight/2, -bWidth/2],
-                [bLength/3, -bHeight/2, bWidth/2],
-                [bLength/3, -bHeight/2, -bWidth/2]
-            ];
-
-            wheelPositions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeom, wheelMaterial);
-                wheel.position.set(pos[0], pos[1] + 0.2, pos[2]);
-                trainContainer.add(wheel);
-            });
-
+            // Striping Merah Commuter Line
             if(type === 2) {
-                const pantoGeom = new THREE.BoxGeometry(0.4, 0.4, 0.6);
-                const panto = new THREE.Mesh(pantoGeom, wheelMaterial);
-                panto.position.set(-bLength/4, bHeight - 0.2, 0);
-                trainContainer.add(panto);
+                const stripMat = new THREE.MeshBasicMaterial({ color: 0xe11d48 });
+                const redStrip = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.4, 0.31), stripMat);
+                redStrip.position.set(0, 1.0, 6.01);
+                train.add(redStrip);
             }
 
-            trainPivotGroup.add(trainContainer);
+            // Kaca Masinis Depan
+            const glassGeom = new THREE.BoxGeometry(2.2, 1.2, 0.4);
+            const glass = new THREE.Mesh(glassGeom, darkGlassMat);
+            glass.position.set(0, 2.4, 6.05);
+            train.add(glass);
+
+            // Jendela Samping (Looping)
+            const sideWindowGeom = new THREE.BoxGeometry(2.45, 1.0, 1.5);
+            for(let z = -4; z <= 4; z += 2.5) {
+                const window = new THREE.Mesh(sideWindowGeom, darkGlassMat);
+                window.position.set(0, 2.0, z);
+                train.add(window);
+            }
+
+            // AC Atap
+            const acGeom = new THREE.BoxGeometry(1.6, 0.4, 1.8);
+            for(let z = -3; z <= 3; z += 3) {
+                const ac = new THREE.Mesh(acGeom, roofMat);
+                ac.position.set(0, 3.3, z);
+                train.add(ac);
+            }
+
+            // Bogie (Roda)
+            const bogieGeom = new THREE.BoxGeometry(2.6, 0.8, 2.2);
+            const bogie1 = new THREE.Mesh(bogieGeom, wheelMat);
+            bogie1.position.set(0, 0.4, 3.5);
+            const bogie2 = new THREE.Mesh(bogieGeom, wheelMat);
+            bogie2.position.set(0, 0.4, -3.5);
+            train.add(bogie1, bogie2);
+
+            // Lampu Depan (Headlights Glowing)
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+            const hLight1 = new THREE.Mesh(new THREE.CircleGeometry(0.15, 16), lightMat);
+            hLight1.position.set(-0.7, 1.4, 6.16);
+            const hLight2 = new THREE.Mesh(new THREE.CircleGeometry(0.15, 16), lightMat);
+            hLight2.position.set(0.7, 1.4, 6.16);
+            train.add(hLight1, hLight2);
+
+            // Spotlight menyala dari kereta (Cinematic Effect)
+            const trainSpotlight = new THREE.SpotLight(0xffffff, 2.0, 20, Math.PI/6, 0.5, 1);
+            trainSpotlight.position.set(0, 1.4, 6.2);
+            trainSpotlight.target.position.set(0, 1.4, 15);
+            train.add(trainSpotlight);
+            train.add(trainSpotlight.target);
+
+            // Geser pivot agar kereta berada di tanah
+            train.position.y = -1.5;
+            trainPivot.add(train);
         }
 
-        // Tampilkan Model Default Saat Pertama Loading
-        buildTrainMesh(0);
+        buildIndonesianKRL(0); // Load tipe pertama
 
-        // Pembuatan Tekstur Lembut Gumpalan Asap Efek Aura via Canvas 2D
-        function createSmokeTexture() {
+        // --- SISTEM ASAP GAS VOLUMETRIK (GAYA VIDEO) ---
+        function createGasTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
+            canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-            gradient.addColorStop(0.3, 'rgba(230, 230, 230, 0.12)');
-            gradient.addColorStop(0.8, 'rgba(150, 150, 150, 0.01)');
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)'); // Lebih tebal di tengah
+            gradient.addColorStop(0.4, 'rgba(230, 230, 230, 0.2)');
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64);
+            ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128);
             return new THREE.CanvasTexture(canvas);
         }
 
-        // Inisialisasi Aliran Struktur Titik Partikel Aura Asap
-        const particleCount = 2500; // Dikunci Menggunakan `const` Sesuai Rekomendasi
-        const auraGeometry = new THREE.BufferGeometry();
-        const auraPositions = new Float32Array(particleCount * 3);
-        const auraSpeeds = new Float32Array(particleCount * 3);
+        const gasParticleCount = 4000;
+        const gasGeometry = new THREE.BufferGeometry();
+        const gasPositions = new Float32Array(gasParticleCount * 3);
+        const gasBaseRadius = new Float32Array(gasParticleCount);
 
-        for(let i=0; i<particleCount; i++) {
+        for(let i=0; i < gasParticleCount; i++) {
             let i3 = i * 3;
-            let angle = Math.random() * Math.PI * 2;
-            let radius = 1.5 + Math.random() * 2.5;
+            // Sebar gas di sekitar area KRL
+            let r = 2.0 + Math.random() * 6.0;
+            let theta = Math.random() * Math.PI * 2;
+            let y = (Math.random() - 0.5) * 8.0;
 
-            auraPositions[i3] = Math.cos(angle) * radius;
-            auraPositions[i3+1] = (Math.random() - 0.5) * 2.0;
-            auraPositions[i3+2] = Math.sin(angle) * radius;
-
-            auraSpeeds[i3] = (Math.random() - 0.5) * 0.02;
-            auraSpeeds[i3+1] = (Math.random() - 0.5) * 0.02;
-            auraSpeeds[i3+2] = (Math.random() - 0.5) * 0.02;
+            gasPositions[i3] = Math.cos(theta) * r;
+            gasPositions[i3+1] = y;
+            gasPositions[i3+2] = Math.sin(theta) * r;
+            gasBaseRadius[i] = r;
         }
 
-        auraGeometry.setAttribute('position', new THREE.BufferAttribute(auraPositions, 3));
+        gasGeometry.setAttribute('position', new THREE.BufferAttribute(gasPositions, 3));
         
-        // Material Point Dikunci Menggunakan `const` Sesuai Rekomendasi
-        const auraMaterial = new THREE.PointsMaterial({
-            size: isMobile ? 0.22 : 0.3,
-            map: createSmokeTexture(),
+        const gasMaterial = new THREE.PointsMaterial({
+            size: isMobile ? 1.5 : 2.5, // Ukuran gas besar biar menutupi layar
+            map: createGasTexture(),
             transparent: true,
-            opacity: 0.6,
+            opacity: 0.15, // Normalnya transparan
             blending: THREE.NormalBlending,
-            depthWrite: false
+            depthWrite: false,
+            color: 0xffffff
         });
 
-        const auraParticleSystem = new THREE.Points(auraGeometry, auraMaterial);
-        scene.add(auraParticleSystem);
+        const gasSystem = new THREE.Points(gasGeometry, gasMaterial);
+        scene.add(gasSystem);
 
-        // Aksi Handler Interaksi Trigger Tombol Menu (Dilengkapi Pengaman Try-Catch)
-        window.triggerSmokeMorph = function(index, name, volt, control, speed, maker, desc, button) {
-            try {
-                if(index < 0 || index > 2 || !button) return;
+        // STATE MACHINE TRANSISI
+        let isTransitioning = false;
+        let transitionProgress = 0;
+        let pendingModelIndex = 0;
 
-                currentActiveModel = index;
-                burstEnergy = 1.5; 
-                targetRotationSpeed = 0.35; 
+        window.triggerSmokeTransition = function(index, name, volt, control, speed, maker, desc, button) {
+            if(index === pendingModelIndex || isTransitioning) return;
+            
+            pendingModelIndex = index;
+            isTransitioning = true;
+            transitionProgress = 0;
 
-                setTimeout(() => {
-                    buildTrainMesh(index);
-                    targetRotationSpeed = 0.01;
-                }, 400);
+            document.getElementById('status-vector').innerText = "VAPOR RECONSTRUCTION...";
+            document.getElementById('status-vector').style.color = "var(--accent-red)";
 
+            // Update UI Teks
+            setTimeout(() => {
                 document.getElementById('active-model').innerText = name;
                 document.getElementById('spec-volt').innerText = volt;
                 document.getElementById('spec-control').innerText = control;
                 document.getElementById('spec-speed').innerText = speed;
                 document.getElementById('spec-maker').innerText = maker;
                 document.getElementById('desc-text').innerText = desc;
-
+                
                 document.querySelectorAll('.dock-trigger-btn').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                
-            } catch (error) {
-                console.error('Error pada fungsi triggerSmokeMorph:', error);
-            }
+            }, 600);
         };
 
-        // Render Frame Loop Utama Jalannya Animasi
-        const frameClock = new THREE.Clock();
-        
+        // RENDER LOOP & CINEMATIC CAMERA CAMERA
+        const clock = new THREE.Clock();
+
         function animate() {
-            animationId = requestAnimationFrame(animate); // Mengamankan Track ID Frame Animasi
-            const elapsed = frameClock.getElapsedTime();
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
 
-            // Manajemen Kecepatan Rotasi Fisik KRL
-            trainPivotGroup.rotation.y += (targetRotationSpeed - trainPivotGroup.rotation.y) * 0.1 + 0.005;
-            trainPivotGroup.position.y = Math.sin(elapsed * 1.5) * 0.08; 
+            // 1. KAMERA CINEMATIC (MENGORBIT PELAN + NAIK TURUN)
+            const camRadius = isMobile ? 15 : 12;
+            const camSpeed = 0.15; // Kecepatan putaran kamera
+            
+            camera.position.x = Math.sin(time * camSpeed) * camRadius;
+            camera.position.z = Math.cos(time * camSpeed) * camRadius + 4; // Agak condong ke depan kereta
+            camera.position.y = 1.0 + Math.sin(time * 0.4) * 1.5; // Efek melayang perlahan
+            
+            camera.lookAt(0, 0, 2); // Fokus pandangan ke hidung KRL
 
-            // Algoritma Transformasi Koordinat Orbit Turbulensi Asap
-            const posAttr = auraGeometry.attributes.position;
-            burstEnergy *= 0.92; 
+            // 2. LOGIK TRANSISI GAS VOLUMETRIK
+            const positions = gasGeometry.attributes.position.array;
 
-            for(let i=0; i<particleCount; i++) {
-                let i3 = i * 3;
-                
-                let x = posAttr.array[i3];
-                let z = posAttr.array[i3+2];
-                
-                let angleOffset = 0.01 + (burstEnergy * 0.02);
-                let nx = x * Math.cos(angleOffset) - z * Math.sin(angleOffset);
-                let nz = x * Math.sin(angleOffset) + z * Math.cos(angleOffset);
+            if (isTransitioning) {
+                transitionProgress += 0.015; // Kecepatan animasi gas
 
-                posAttr.array[i3] = nx + (auraSpeeds[i3] * (1.0 + burstEnergy * 25));
-                posAttr.array[i3+1] += Math.sin(elapsed + i) * 0.003 + (auraSpeeds[i3+1] * burstEnergy * 10);
-                posAttr.array[i3+2] = nz + (auraSpeeds[i3+2] * (1.0 + burstEnergy * 25));
+                if (transitionProgress < 0.5) {
+                    // Fase 1: Gas menyedot ke tengah dan jadi pekat
+                    gasMaterial.opacity = THREE.MathUtils.lerp(gasMaterial.opacity, 0.9, 0.1);
+                    gasMaterial.size = THREE.MathUtils.lerp(gasMaterial.size, isMobile ? 3.0 : 4.5, 0.1);
+                    
+                    for(let i=0; i<gasParticleCount; i++) {
+                        positions[i*3] *= 0.95; // Sedot X
+                        positions[i*3+1] *= 0.95; // Sedot Y
+                        positions[i*3+2] *= 0.95; // Sedot Z
+                    }
+                } else if (transitionProgress >= 0.5 && transitionProgress < 0.52) {
+                    // Momen Puncak: Kereta diganti di balik gas pekat
+                    buildIndonesianKRL(pendingModelIndex);
+                    document.getElementById('status-vector').innerText = "SYSTEM STABLE";
+                    document.getElementById('status-vector').style.color = "#94a3b8";
+                } else {
+                    // Fase 2: Gas meledak keluar (Dissipate)
+                    gasMaterial.opacity = THREE.MathUtils.lerp(gasMaterial.opacity, 0.15, 0.05);
+                    gasMaterial.size = THREE.MathUtils.lerp(gasMaterial.size, isMobile ? 1.5 : 2.5, 0.05);
 
-                let dist = Math.sqrt(nx*nx + nz*nz);
-                if(dist > 5.5 || burstEnergy < 0.01 && dist > 4.0) {
-                    let angle = Math.random() * Math.PI * 2;
-                    posAttr.array[i3] = Math.cos(angle) * (1.5 + Math.random() * 1.5);
-                    posAttr.array[i3+2] = Math.sin(angle) * (1.5 + Math.random() * 1.5);
+                    for(let i=0; i<gasParticleCount; i++) {
+                        let baseR = gasBaseRadius[i];
+                        let currentR = Math.sqrt(positions[i*3]**2 + positions[i*3+2]**2);
+                        if(currentR < baseR) {
+                            positions[i*3] *= 1.05; // Dorong keluar
+                            positions[i*3+1] *= 1.05;
+                            positions[i*3+2] *= 1.05;
+                        }
+                    }
+                }
+
+                if (transitionProgress > 1.0) {
+                    isTransitioning = false;
+                }
+            } else {
+                // Mode Normal (Idle Gas Orbit)
+                for(let i=0; i<gasParticleCount; i++) {
+                    let x = positions[i*3];
+                    let z = positions[i*3+2];
+                    // Rotasi pelan
+                    let nx = x * Math.cos(0.002) - z * Math.sin(0.002);
+                    let nz = x * Math.sin(0.002) + z * Math.cos(0.002);
+                    
+                    positions[i*3] = nx;
+                    positions[i*3+1] += Math.sin(time * 2 + i) * 0.01; // Efek gas naik turun
+                    positions[i*3+2] = nz;
                 }
             }
-            posAttr.needsUpdate = true;
-            auraParticleSystem.rotation.y = elapsed * 0.02;
-
+            
+            gasGeometry.attributes.position.needsUpdate = true;
             renderer.render(scene, camera);
         }
 
-        // Eksekusi Animasi Utama
-        animate();
-
-        // Responsive Resizing Handler System
+        // Fix Resize
         window.addEventListener('resize', () => {
-            const innerMobile = window.innerWidth <= 768;
-            camera.aspect = window.innerWidth / (innerMobile ? window.innerHeight * 0.42 : window.innerHeight);
+            const isMobile = window.innerWidth <= 768;
+            camera.aspect = window.innerWidth / (isMobile ? window.innerHeight * 0.5 : window.innerHeight);
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, innerMobile ? window.innerHeight * 0.42 : window.innerHeight);
+            renderer.setSize(window.innerWidth, isMobile ? window.innerHeight * 0.5 : window.innerHeight);
         });
+
+        animate();
     </script>
 </body>
 </html>
